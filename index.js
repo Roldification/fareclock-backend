@@ -10,6 +10,10 @@ const datastore = new Datastore({
 const app = express();
 
 app.get("/", async (req, res) => {
+  res.send("okay! :D");
+});
+
+app.get("/cloud", async (req, res) => {
   const query = datastore.createQuery("users");
   try {
     const [users] = await datastore.runQuery(query);
