@@ -6,7 +6,7 @@ const router = express.Router();
 
 module.exports = (datastore) => {
   router.get("/", async (req, res) => {
-    res.send("latest!");
+    res.send("latest 1!!");
   });
 
   router.get("/cloud", async (req, res) => {
