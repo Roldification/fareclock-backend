@@ -2,6 +2,8 @@ const express = require("express");
 const { fromZonedTime } = require("date-fns-tz");
 const { parseISO } = require("date-fns");
 
+const { DateTime } = require("luxon");
+
 const router = express.Router();
 
 module.exports = (datastore) => {
@@ -27,12 +29,22 @@ module.exports = (datastore) => {
 
       const shiftKey = datastore.key(["users", parseInt(userId, 10), "shifts"]);
 
-      shiftData.startTime = parseISO(
-        fromZonedTime(new Date(shiftData.startTime), timezone).toISOString()
-      ).getTime();
-      shiftData.endTime = parseISO(
-        fromZonedTime(new Date(shiftData.endTime), timezone).toISOString()
-      ).getTime();
+      const startTime = DateTime.fromISO(shiftData.startTime, {
+        zone: timezone,
+      });
+      const endTime = DateTime.fromISO(shiftData.endTime, {
+        zone: timezone,
+      });
+
+      shiftData.startTime = startTime.toJSDate();
+      shiftData.endTime = endTime.toJSDate();
+
+      //   shiftData.startTime = parseISO(
+      //     fromZonedTime(new Date(shiftData.startTime), timezone).toISOString()
+      //   ).getTime();
+      //   shiftData.endTime = parseISO(
+      //     fromZonedTime(new Date(shiftData.endTime), timezone).toISOString()
+      //   ).getTime();
 
       const shiftEntity = {
         key: shiftKey,
