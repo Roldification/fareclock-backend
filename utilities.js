@@ -1,5 +1,7 @@
+const { PropertyFilter } = require("@google-cloud/datastore");
 const { parseISO, parse } = require("date-fns");
 const { format } = require("date-fns-tz");
+const { DateTime } = require("luxon");
 
 function timezones() {
   return [
@@ -29,13 +31,70 @@ function formatDatetime(date, timezone = "Asia/Tokyo") {
 }
 
 const validations = {
-  isShiftExceeded: (datastore, userKey, startDate, endDate) => {
-    const query = datastore
-      .createQuery("shifts")
-      .filter("userKey", "=", userKey)
-      .filter("startTime", "<=", endDate);
+  isShiftTimeValid: (startTime, endTime) => {
+    if (!startTime || !endTime) {
+      return false;
+    }
+    const start = parseISO(startTime);
+    const end = parseISO(endTime);
+    return start < end;
+  },
+  isShiftExceeded: async (datastore, userKey, startDate, endDate) => {
+    try {
+      const dayStart = DateTime.fromJSDate(startDate).startOf("day").toJSDate();
 
-    return true;
+      const dayEnd = DateTime.fromJSDate(startDate).endOf("day").toJSDate();
+
+      const query = datastore
+        .createQuery("shifts")
+        .hasAncestor(userKey)
+        .filter(new PropertyFilter("startTime", ">=", dayStart))
+        .filter(new PropertyFilter("startTime", "<=", dayEnd));
+
+      const [shifts] = await datastore.runQuery(query);
+
+      let totalTimeInHours = 0;
+
+      for (const shift of shifts) {
+        const start = DateTime.fromJSDate(shift.startTime);
+        const end = DateTime.fromJSDate(shift.endTime);
+
+        const diffInMinutes = end.diff(start, "minutes").minutes;
+
+        totalTimeInHours += diffInMinutes / 60;
+      }
+
+      const start = DateTime.fromJSDate(startDate);
+      const end = DateTime.fromJSDate(endDate);
+      const diffInMinutes2 = end.diff(start, "minutes").minutes;
+
+      totalTimeInHours += diffInMinutes2 / 60;
+
+      console.log(`Total time in hours for user: ${totalTimeInHours}`);
+
+      if (Number(totalTimeInHours) > 12) return false;
+
+      return true;
+    } catch (error) {
+      console.error("Error checking shift exceedance:", error);
+      return false;
+    }
+  },
+  isShiftOverlapping: async (datastore, userKey, startDate, endDate) => {
+    try {
+      const query = datastore
+        .createQuery("shifts")
+        .hasAncestor(userKey)
+        .filter(new PropertyFilter("startTime", "<=", endDate))
+        .filter(new PropertyFilter("endTime", ">=", startDate));
+
+      const [shifts] = await datastore.runQuery(query);
+
+      return shifts.length > 0;
+    } catch (error) {
+      console.error("Error checking shift overlap:", error);
+      return false;
+    }
   },
   isValidTimezone: (timezone) => {
     const validTimezones = timezones().map((tz) => tz.value);

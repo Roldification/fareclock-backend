@@ -3,6 +3,7 @@ const { fromZonedTime } = require("date-fns-tz");
 const { parseISO } = require("date-fns");
 
 const { DateTime } = require("luxon");
+const { validations } = require("./utilities");
 
 const router = express.Router();
 
@@ -27,24 +28,62 @@ module.exports = (datastore) => {
     try {
       const { userId, timezone = "Asia/Manila", ...shiftData } = req.body;
 
+      const isValidShiftTime = validations.isShiftTimeValid(
+        shiftData.startTime,
+        shiftData.endTime
+      );
+      if (!isValidShiftTime) {
+        return res.status(400).json({
+          error: "Invalid shift time. Start time must be before end time.",
+        });
+      }
+
       const shiftKey = datastore.key(["users", parseInt(userId, 10), "shifts"]);
 
       const startTime = DateTime.fromISO(shiftData.startTime, {
         zone: timezone,
       });
+
       const endTime = DateTime.fromISO(shiftData.endTime, {
         zone: timezone,
       });
 
-      shiftData.startTime = startTime.toJSDate();
-      shiftData.endTime = endTime.toJSDate();
+      const startTimeJSDate = startTime.toJSDate();
+      const endTimeJSDate = endTime.toJSDate();
 
-      //   shiftData.startTime = parseISO(
-      //     fromZonedTime(new Date(shiftData.startTime), timezone).toISOString()
-      //   ).getTime();
-      //   shiftData.endTime = parseISO(
-      //     fromZonedTime(new Date(shiftData.endTime), timezone).toISOString()
-      //   ).getTime();
+      const exceedValidation = await validations.isShiftExceeded(
+        datastore,
+        datastore.key(["users", parseInt(userId, 10)]),
+        startTimeJSDate,
+        endTimeJSDate
+      );
+
+      // res.json(400, {
+      //   error: "Temporarily unavailable",
+      // });
+
+      // return;
+
+      if (!exceedValidation) {
+        return res.status(400).json({
+          error: "Shift exceeds the maximum allowed time for the day",
+        });
+      }
+
+      const isShiftOverlapping = await validations.isShiftOverlapping(
+        datastore,
+        datastore.key(["users", parseInt(userId, 10)]),
+        startTimeJSDate,
+        endTimeJSDate
+      );
+      if (isShiftOverlapping) {
+        return res.status(400).json({
+          error: "Shift overlaps with an existing shift",
+        });
+      }
+
+      shiftData.startTime = startTimeJSDate;
+      shiftData.endTime = endTimeJSDate;
 
       const shiftEntity = {
         key: shiftKey,
