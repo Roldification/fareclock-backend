@@ -41,8 +41,8 @@ const validations = {
   },
   isShiftExceeded: async (datastore, timezone, userKey, startDate, endDate) => {
     try {
-      startDate = DateTime.fromISO(startDate, { zone: timezone }).toUTC();
-      endDate = DateTime.fromISO(endDate, { zone: timezone }).toUTC();
+      startDate = DateTime.fromISO(startDate, { zone: timezone });
+      endDate = DateTime.fromISO(endDate, { zone: timezone });
 
       const dayStart = startDate.startOf("day");
 
@@ -54,12 +54,8 @@ const validations = {
       const query = datastore
         .createQuery("shifts")
         .hasAncestor(userKey)
-        .filter(
-          new PropertyFilter("startTime", ">=", dayStart.toUTC().toJSDate())
-        )
-        .filter(
-          new PropertyFilter("startTime", "<=", dayEnd.toUTC().toJSDate())
-        );
+        .filter(new PropertyFilter("startTime", ">=", dayStart.toJSDate()))
+        .filter(new PropertyFilter("startTime", "<=", dayEnd.toJSDate()));
 
       const [shifts] = await datastore.runQuery(query);
 
