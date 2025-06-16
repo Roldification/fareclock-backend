@@ -39,17 +39,23 @@ const validations = {
     const end = parseISO(endTime);
     return start < end;
   },
-  isShiftExceeded: async (datastore, userKey, startDate, endDate) => {
+  isShiftExceeded: async (datastore, timezone, userKey, startDate, endDate) => {
     try {
-      const dayStart = DateTime.fromJSDate(startDate).startOf("day").toJSDate();
+      startDate = DateTime.fromISO(startDate, { zone: timezone }).toUTC();
+      endDate = DateTime.fromISO(endDate, { zone: timezone }).toUTC();
 
-      const dayEnd = DateTime.fromJSDate(startDate).endOf("day").toJSDate();
+      const dayStart = startDate.startOf("day");
+
+      const dayEnd = startDate.endOf("day");
+
+      console.log("day start:", startDate, dayStart);
+      console.log("day end:", startDate, dayEnd);
 
       const query = datastore
         .createQuery("shifts")
         .hasAncestor(userKey)
-        .filter(new PropertyFilter("startTime", ">=", dayStart))
-        .filter(new PropertyFilter("startTime", "<=", dayEnd));
+        .filter(new PropertyFilter("startTime", ">=", dayStart.toJSDate()))
+        .filter(new PropertyFilter("startTime", "<=", dayEnd.toJSDate()));
 
       const [shifts] = await datastore.runQuery(query);
 
@@ -64,8 +70,8 @@ const validations = {
         totalTimeInHours += diffInMinutes / 60;
       }
 
-      const start = DateTime.fromJSDate(startDate);
-      const end = DateTime.fromJSDate(endDate);
+      const start = startDate;
+      const end = endDate;
       const diffInMinutes2 = end.diff(start, "minutes").minutes;
 
       totalTimeInHours += diffInMinutes2 / 60;

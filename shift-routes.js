@@ -53,9 +53,10 @@ module.exports = (datastore) => {
 
       const exceedValidation = await validations.isShiftExceeded(
         datastore,
+        timezone,
         datastore.key(["users", parseInt(userId, 10)]),
-        startTimeJSDate,
-        endTimeJSDate
+        shiftData.startTime,
+        shiftData.endTime
       );
 
       // res.json(400, {
