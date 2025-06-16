@@ -48,8 +48,8 @@ const validations = {
 
       const dayEnd = startDate.endOf("day");
 
-      console.log("day start:", startDate, dayStart);
-      console.log("day end:", startDate, dayEnd);
+      console.log("day start 1:", startDate, dayStart.toJSDate());
+      console.log("day end 1:", startDate, dayEnd.toJSDate());
 
       const query = datastore
         .createQuery("shifts")
