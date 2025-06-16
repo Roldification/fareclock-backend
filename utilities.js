@@ -54,8 +54,12 @@ const validations = {
       const query = datastore
         .createQuery("shifts")
         .hasAncestor(userKey)
-        .filter(new PropertyFilter("startTime", ">=", dayStart.toJSDate()))
-        .filter(new PropertyFilter("startTime", "<=", dayEnd.toJSDate()));
+        .filter(
+          new PropertyFilter("startTime", ">=", dayStart.toUTC().toJSDate())
+        )
+        .filter(
+          new PropertyFilter("startTime", "<=", dayEnd.toUTC().toJSDate())
+        );
 
       const [shifts] = await datastore.runQuery(query);
 
