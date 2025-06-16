@@ -28,7 +28,23 @@ function formatDatetime(date, timezone = "Asia/Tokyo") {
   });
 }
 
+const validations = {
+  isShiftExceeded: (datastore, userKey, startDate, endDate) => {
+    const query = datastore
+      .createQuery("shifts")
+      .filter("userKey", "=", userKey)
+      .filter("startTime", "<=", endDate);
+
+    return true;
+  },
+  isValidTimezone: (timezone) => {
+    const validTimezones = timezones().map((tz) => tz.value);
+    return validTimezones.includes(timezone);
+  },
+};
+
 module.exports = {
   timezones,
   formatDatetime,
+  validations,
 };

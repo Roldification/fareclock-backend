@@ -3,8 +3,8 @@ require("dotenv").config();
 const { Datastore } = require("@google-cloud/datastore");
 const cors = require("cors");
 const datastore = new Datastore({
-  projectId: "hardy-position-301615",
-  databaseId: "fareclock1",
+  projectId: "fc-itw-calio",
+  databaseId: "fareclock",
 });
 
 const app = express();
